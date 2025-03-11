@@ -1,8 +1,7 @@
 import bcrypt from 'bcryptjs';
-import { User } from '../users/user.model';
-import { Optional } from 'sequelize';
+import { getRepository } from 'typeorm';
+import { User } from './user.model';
 
-// Define User parameters for creation and update
 interface UserCreateAttributes {
     email: string;
     password: string;
@@ -12,9 +11,8 @@ interface UserCreateAttributes {
     role: string;
 }
 
-interface UserUpdateAttributes extends Optional<UserCreateAttributes, 'password'> {}
+interface UserUpdateAttributes extends Partial<UserCreateAttributes> {}
 
-// Exported user service functions
 export const userService = {
     getAll,
     getById,
@@ -23,52 +21,93 @@ export const userService = {
     delete: _delete
 };
 
+/**
+ * ✅ Get all users
+ */
 async function getAll(): Promise<User[]> {
-    return await User.findAll();
+    const userRepository = getRepository(User);
+    return await userRepository.find();
 }
 
+/**
+ * ✅ Get user by ID
+ */
 async function getById(id: number): Promise<User> {
     return await getUser(id);
 }
 
+/**
+ * ✅ Create a new user
+ */
 async function create(params: UserCreateAttributes): Promise<void> {
-    // Validate if email is already registered
-    if (await User.findOne({ where: { email: params.email } })) {
+    const userRepository = getRepository(User);
+
+    // Check if email already exists
+    const existingUser = await userRepository.findOne({
+        where: { email: params.email }
+    });
+
+    if (existingUser) {
         throw new Error(`Email "${params.email}" is already registered`);
     }
 
-    // Create user instance
-    const user = User.build({
+    // Hash the password before saving the user
+    const passwordHash = await bcrypt.hash(params.password, 10);
+
+    // Create and save the user
+    const user = userRepository.create({
         ...params,
-        passwordHash: await bcrypt.hash(params.password, 10) // Hash password properly
+        passwordHash: passwordHash
     });
 
-    // Save user
-    await user.save();
+    await userRepository.save(user);
 }
 
+/**
+ * ✅ Update user
+ */
 async function update(id: number, params: UserUpdateAttributes): Promise<void> {
+    const userRepository = getRepository(User);
+
+    // Find the user first
     const user = await getUser(id);
 
-    // Hash password if provided
+    // If a new password is provided, hash it
     if (params.password) {
         user.passwordHash = await bcrypt.hash(params.password, 10);
-        delete params.password; // Remove plain password before updating
     }
 
-    // Update user and save
+    // Update the user with new data
     Object.assign(user, params);
-    await user.save();
+    await userRepository.save(user);
 }
 
+/**
+ * ✅ Delete user
+ */
 async function _delete(id: number): Promise<void> {
+    const userRepository = getRepository(User);
+
+    // Find the user first
     const user = await getUser(id);
-    await user.destroy();
+    await userRepository.remove(user);
 }
 
-// Helper function to get a user by ID
+/**
+ * ✅ Get user by ID with error handling
+ */
 async function getUser(id: number): Promise<User> {
-    const user = await User.findByPk(id);
-    if (!user) throw new Error('User not found');
+    const userRepository = getRepository(User);
+
+    console.log(`Fetching user with id: ${id}`); // Added logging for debugging
+
+    const user = await userRepository.findOne({
+        where: { id: id }
+    });
+
+    if (!user) {
+        throw new Error('User not found');
+    }
+
     return user;
 }

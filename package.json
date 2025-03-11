@@ -4,7 +4,7 @@
   "license": "MIT",
   "scripts": {
     "start": "node ./dist/server.js",
-    "start:dev": "nodemon --ext ts --exec ts-node ./server.ts"
+    "dev": "ts-node-dev --respawn --transpile-only server.ts"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
@@ -14,10 +14,12 @@
     "helmet": "^8.0.0",
     "http-status-codes": "^2.3.0",
     "joi": "^17.2.0",
-    "mysql2": "^2.1.0",
+    "mysql2": "^2.3.3",
     "object-assign": "^4.1.1",
+    "reflect-metadata": "^0.2.2",
     "rootpath": "^0.1.2",
     "sequelize": "^6.3.4",
+    "typeorm": "^0.3.21",
     "uuid": "^11.1.0"
   },
   "devDependencies": {

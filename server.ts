@@ -1,10 +1,10 @@
 import dotenv from 'dotenv';
 dotenv.config();
 
-import express, { Request, Response, NextFunction } from 'express';
+import express from 'express';
 import cors from 'cors';
-import errorHandler from './_middleware/error-handler';
-import userRoutes from './users/users.controller';
+import { initializeDatabase } from './_helpers/db';
+import userRoutes from './users/users.controller'; // ✅ Import user routes
 
 const app = express();
 
@@ -14,13 +14,11 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cors());
 
 // API routes
-app.use('/users', userRoutes);
-
-// Global error handler (must be the last middleware)
-app.use((err: any, req: Request, res: Response, next: NextFunction) => {
-    errorHandler(err, req, res, next);
-});
+userRoutes(app); // ✅ Directly pass 'app' to handle routes
 
 // Start server
 const port = process.env.PORT ? Number(process.env.PORT) : 4000;
-app.listen(port, () => console.log(`🚀 Server listening on port ${port}`));
+app.listen(port, async () => {
+    await initializeDatabase();
+    console.log(`🚀 Server listening on port ${port}`);
+});
